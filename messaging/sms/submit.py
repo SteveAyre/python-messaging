@@ -20,19 +20,25 @@ VALID_NUMBER = re.compile("^\+?\d{3,20}$")
 class SmsSubmit(SmsBase):
     """I am a SMS ready to be sent"""
 
-    def __init__(self, number, text):
+    def __init__(self, number, text, csca=None, validity=None, klass=None, request_status=False, ref=None, csms_ref=None):
         super(SmsSubmit, self).__init__()
         self._number = None
         self._csca = None
         self._klass = None
         self._validity = None
-        self.request_status = False
-        self.ref = None
-        self.rand_id = None
+        self.request_status = request_status
+        self.ref = ref
+        self.csms_ref = csms_ref
         self.id_list = range(0, 255)
         self.msgvp = 0xaa
         self.pid = 0x00
 
+        if csca is not None:
+            self.csca = csca
+        if validity is not None:
+            self.validity = validity
+        if klass is not None:
+            self.klass = klass
         self.number = number
         self.text = text
         self.text_gsm = None
@@ -303,19 +309,19 @@ class SmsSubmit(SmsBase):
         mid = 0x00
         data_len = 0x03
 
-        sms_ref = self._get_rand_id() if self.rand_id is None else self.rand_id
-        sms_ref &= 0xFF
+        csms_ref = self._get_rand_id() if self.csms_ref is None else self.csms_ref
+        csms_ref &= 0xFF
 
         for i, msg in enumerate(msgs):
             i += 1
             total_parts = len(msgs)
             if limit == consts.SEVENBIT_SIZE:
                 udh = (chr(udh_len) + chr(mid) + chr(data_len) +
-                       chr(sms_ref) + chr(total_parts) + chr(i))
+                       chr(csms_ref) + chr(total_parts) + chr(i))
                 padding = " "
             else:
                 udh = (unichr(int("%04x" % ((udh_len << 8) | mid), 16)) +
-                       unichr(int("%04x" % ((data_len << 8) | sms_ref), 16)) +
+                       unichr(int("%04x" % ((data_len << 8) | csms_ref), 16)) +
                        unichr(int("%04x" % ((total_parts << 8) | i), 16)))
                 padding = ""
 
